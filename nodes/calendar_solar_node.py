@@ -22,9 +22,11 @@ FONT_ARRAY = []
 for i in range(len(__font_file_list)):
     _, __filename =  os.path.split(__font_file_list[i])
     FONT_DICT[__filename] = __font_file_list[i]
-    FONT_ARRAY.append((__font_file_list[i], __font_file_list[i]))
+    FONT_ARRAY.append(__filename)
 FONT_LIST = list(FONT_DICT.keys())
-
+print('=================')
+print(FONT_ARRAY)
+print(FONT_LIST)
 class Day:
     def __init__(self):
         self.month = 0
@@ -66,7 +68,6 @@ class CalendarLunarSolarMouthNode:
     @classmethod
     def INPUT_TYPES(self):
         # FONT_LIST 转成 选项字符数组
-        font_array = ("OPTIONS", {"options": FONT_LIST, "default": default_font})
         return {
             "required": {
                 "year": ("INT", {"default": 2021, "min": 1900, "max": 2100}),
@@ -78,8 +79,9 @@ class CalendarLunarSolarMouthNode:
                 "cell_font_size": ("INT", {"default": 24, "min": 1, "max": 9999}),
                 "header_font_color": ("STRING", {"default": "white"}),
                 "cell_color": ("STRING", {"default": "white"}),
+                "cell_lunar_color": ("STRING", {"default": "white"}),
                 "background_color": ("STRING", {"default": "white"}),
-                "font": font_array
+                "font": (FONT_ARRAY, )
             },
         }
 
@@ -89,7 +91,7 @@ class CalendarLunarSolarMouthNode:
     FUNCTION = 'calendar_lunar'
     CATEGORY = '日历'
 
-    def calendar_lunar(self, year, month, cell_size, header_height, row_padding, header_font_size, cell_font_size, header_font_color, cell_color, background_color, font):
+    def calendar_lunar(self, year, month, cell_size, header_height, row_padding, header_font_size, cell_font_size, header_font_color, cell_color, background_color, font, cell_lunar_color):
         date_now = datetime.now()
         now = Solar.fromYmd(year, month, date_now.day)
 
@@ -111,7 +113,7 @@ class CalendarLunarSolarMouthNode:
 
         print(state)
 
-        return self.draw_image(state, cell_size, header_height, row_padding, header_font_size, cell_font_size, header_font_color, cell_color, background_color, font)
+        return self.draw_image(state, cell_size, header_height, row_padding, header_font_size, cell_font_size, header_font_color, cell_color, background_color, font, cell_lunar_color)
 
     def build_day(self, now:Solar, d: Solar):
         ymd = d.toYmd()
@@ -216,7 +218,7 @@ class CalendarLunarSolarMouthNode:
         state['monthInChinese'] = lunar.getMonthInChinese()
         state['monthInGanZhi'] = lunar.getMonthInGanZhi()
 
-    def draw_image(self, state,  cell_size, header_height, row_padding, header_font_size, cell_font_size, header_font_color, cell_color, background_color, font):
+    def draw_image(self, state,  cell_size, header_height, row_padding, header_font_size, cell_font_size, header_font_color, cell_color, background_color, font, cell_lunar_color):
         cell_width = cell_size
         cell_height = cell_size
         padding = row_padding
@@ -229,7 +231,10 @@ class CalendarLunarSolarMouthNode:
         draw = ImageDraw.Draw(image)
 
         # 加载字体
-        font_path = font
+        font_key = default_font
+        if font:
+            font_key = font
+        font_path = FONT_DICT[font_key]
         font = ImageFont.truetype(font_path, header_font_size)
         font_small = ImageFont.truetype(font_path, cell_font_size)
 
@@ -238,7 +243,7 @@ class CalendarLunarSolarMouthNode:
         header_bbox = draw.textbbox((0, 0), header_text, font=font)
         header_width = header_bbox[2] - header_bbox[0]
         header_height_text = header_bbox[3] - header_bbox[1]
-        draw.text(((img_width - header_width) / 2, padding), header_text, fill=header_font_size, font=font)
+        draw.text(((img_width - header_width) / 2, padding), header_text, fill=header_font_color, font=font)
 
         # 绘制星期表头
         days_of_week = state['data'].heads[0]
@@ -272,6 +277,6 @@ class CalendarLunarSolarMouthNode:
                 draw.text((x + (cell_width - lunar_day_width) / 2, y + (cell_height - lunar_day_height) / 2 - 20),
                           str(day.day), fill=cell_color, font=font_small)  # 调整 day 的位置
                 draw.text((x + (cell_width - desc_width) / 2, y + (cell_height - desc_height) / 2 + 20), day.desc,
-                          fill=(0, 0, 0, 128), font=font_small)  # 调整 desc 的位置
+                          fill=cell_lunar_color, font=font_small)  # 调整 desc 的位置
         image.save("calendar2.png")
         return (pil2tensor(image.convert("RGBA")), )
