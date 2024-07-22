@@ -18,9 +18,11 @@ default_font = 'Alibaba-PuHuiTi-Heavy.ttf'
 __font_file_list = glob.glob(default_font_dir + '/*.ttf')
 __font_file_list.extend(glob.glob(default_font_dir + '/*.otf'))
 FONT_DICT = {}
+FONT_ARRAY = []
 for i in range(len(__font_file_list)):
     _, __filename =  os.path.split(__font_file_list[i])
     FONT_DICT[__filename] = __font_file_list[i]
+    FONT_ARRAY.append((__font_file_list[i], __font_file_list[i]))
 FONT_LIST = list(FONT_DICT.keys())
 
 class Day:
@@ -63,6 +65,8 @@ class CalendarLunarSolarMouthNode:
 
     @classmethod
     def INPUT_TYPES(self):
+        # FONT_LIST 转成 选项字符数组
+        font_array = ("OPTIONS", {"options": FONT_LIST, "default": default_font})
         return {
             "required": {
                 "year": ("INT", {"default": 2021, "min": 1900, "max": 2100}),
@@ -75,11 +79,11 @@ class CalendarLunarSolarMouthNode:
                 "header_font_color": ("STRING", {"default": "white"}),
                 "cell_color": ("STRING", {"default": "white"}),
                 "background_color": ("STRING", {"default": "white"}),
-                "font": np.array(FONT_LIST)
+                "font": font_array
             },
         }
-    
-    
+
+
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
     FUNCTION = 'calendar_lunar'
@@ -143,7 +147,7 @@ class CalendarLunarSolarMouthNode:
         rest = False
         if d.getWeek() == 6 or d.getWeek == 0:
             rest = True
-        
+
         holiday = HolidayUtil.getHoliday(ymd)
         if holiday:
             rest = not holiday.isWork()
@@ -162,11 +166,11 @@ class CalendarLunarSolarMouthNode:
             f = solarFestival[0]
             if len(f) < 4:
                 desc = f
-        
+
         day.desc = desc
 
         return day
-    
+
     def render_data(self, state, now: Solar):
         month = Month()
         weeks = []
@@ -193,7 +197,7 @@ class CalendarLunarSolarMouthNode:
             holiday.name = h.getName()
             # parseInt(h.getTarget().substring(5, 7), 10) => python
             holiday.month = int(h.getTarget()[5:7])
-            
+
             exists = False
             for a in holidays:
                 if a.name == holiday.name:
@@ -211,7 +215,7 @@ class CalendarLunarSolarMouthNode:
         state['yearShengXiao'] = lunar.getYearShengXiao()
         state['monthInChinese'] = lunar.getMonthInChinese()
         state['monthInGanZhi'] = lunar.getMonthInGanZhi()
-            
+
     def draw_image(self, state,  cell_size, header_height, row_padding, header_font_size, cell_font_size, header_font_color, cell_color, background_color, font):
         cell_width = cell_size
         cell_height = cell_size
